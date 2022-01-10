@@ -1,0 +1,21 @@
+/* yummy hack */
+
+.leaflet-container {
+    background-color: #3f3f3f;
+}
+
+.leaflet-popup-content-wrapper, .leaflet-popup-tip {
+	background-color: #1f1f1f;
+	border-radius: 0px;
+	color: #eeeeee;
+}
+
+.leaflet-container a:link, .leaflet-container a:visited, .leaflet-container a:active {
+	color: #afafaf;
+	transition: 0.1s;
+}
+
+.leaflet-container a:hover {
+	color: #eeeeee;
+	transition: 0.1s;
+}

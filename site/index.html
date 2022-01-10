@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>ThePiGuy24.net - Home of my terrible ideas since 2020</title>
+	<link rel="stylesheet" type="text/css" href="/styles.css">
+	<meta property="og:title" content="ThePiGuy24.net">
+	<meta property="og:type" content="website">
+	<meta property="og:url" content="https://thepiguy24.net">
+	<meta property="og:image" content="https://thepiguy24.net/media/icon.png">
+	<meta property="og:description" content="ThePiGuy24's personal website">
+	<meta charset="UTF-8">
+	<!-- mmyes relying on external sources, my favourite (leaflet crap) -->
+	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+		integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+		crossorigin="" />
+	<link rel="stylesheet" type="text/css" href="./leafletoverride.css">
+	<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+		integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+		crossorigin=""></script>
+</head>
+
+<body>
+	<ul class="menubar">
+		<li class="menuitem"><img class="icon menuitem" src="/media/icon.png"></li>
+		<li class="menuitem"><a class="menuitem" href="/">ThePiGuy24</a></li>
+		<li class="menuitem"><a class="menuitem" href="/projects/">Projects</a></li>
+		<li class="menuitem"><a class="menuitem" href="/about/">About</a></li>
+	</ul>
+	<div class="content">
+		<h1>Ascent Frozen Hell Interactive Map</h1>
+		<div id="map" style="height:calc(100vh - 16px);"></div>
+		<script src="./countries.js"></script>
+		<script>
+			var yx = L.latLng;
+			var xy = function (x, y) { if (L.Util.isArray(x)) { return yx(-x[1], x[0]); } return yx(-y, x); }; // ""fix"" (bodge) because leaflet devs refuse to allow just regular xy cartesian coordinates
+			var bxy = function (a) { // this function is hideous and doesnt even work correctly
+				if (L.Util.isArray(a)) {
+					if (typeof(a[0]) != "number" || typeof(a[1]) != "number") {
+						var o = [];
+						for (i = 0; i < a.length; i++) {
+							o[i] = bxy(a[i]);
+						}
+						return o;
+					} else {
+						return xy(a);
+					}
+				} else {
+					return [];
+				}
+			}
+			var map = L.map('map', {
+				crs: L.CRS.Simple
+			}).setView(xy(450, -100), -2);
+			L.tileLayer('//files.thepiguy24.net/png/afhmap/{id}/{z}/{x},{y}.png', {
+				minZoom: -3,
+				maxZoom: 0,
+				id: 'day',
+				tileSize: 512,
+				zoomOffset: 3,
+				noWrap: true
+			}).addTo(map);
+			var cityicon = L.icon({ // TODO: make a better city maker icon (and others)
+				iconUrl: "/media/icon.png",
+				iconSize: [16, 16],
+				iconAnchor: [8, 8]
+			});
+			for (wi = 0; wi < waypoints.length; wi++) {
+				var wo = waypoints[wi];
+				var popuptext = "<h2>"+wo.name+"</h2>";
+				if (wo.description) {
+					popuptext += "<p>"+wo.description.replace("\n","<br>")+"</p>"
+				}
+				if (wo.wiki) {
+					popuptext += "<a href="+wikibaselink+escape(wo.wiki)+">Wiki Page</a>"
+				}
+				L.marker(xy(wo.location), {
+					//icon: cityicon
+				}).addTo(map).bindPopup(popuptext,{className:"mappopup"});
+			}
+			var l = countries.length;
+			for (ci = 0; ci < l; ci++) {
+				var c = countries[ci];
+				console.log(ci, c, bxy(c.points));
+				var popuptext = "<h2>"+c.name+"</h2>";
+				if (c.description) {
+					popuptext += "<p>"+c.description.replace("\n","<br>")+"</p>"
+				}
+				if (c.wiki) {
+					popuptext += "<a href="+wikibaselink+escape(c.wiki)+">Wiki Page</a>"
+				}
+				c.polygon = L.polygon(bxy(c.points), {
+					color: c.colour,
+					name: c.name
+				}).addTo(map).bindPopup(popuptext);
+				if (c.waypoints) {
+					for (wi = 0; wi < c.waypoints.length; wi++) {
+						var wo = c.waypoints[wi];
+						var popuptext = "<h2>"+wo.name+"</h2>";
+						if (wo.description) {
+							popuptext += "<p>"+wo.description.replace("\n","<br>")+"</p>"
+						}
+						if (wo.wiki) {
+							popuptext += "<a href="+wikibaselink+escape(wo.wiki)+">Wiki Page</a>"
+						}
+						L.marker(xy(wo.location), {
+							//icon: cityicon
+						}).addTo(map).bindPopup(popuptext);
+					}
+				}
+				/*c.polygon.on("click", function(e) {
+					console.log(e);
+				});*/
+				console.log(c.polygon.getLatLngs());
+			}
+
+			// to edit map points, uncomment this block, and disable the polygon popups (yes this is what i have to endure when adding/modifying countries)
+
+			/*var polypoints = [];
+			var polygon = L.polygon(bxy(polypoints), {
+				color: "#7f7f7f"
+			}).addTo(map);
+			map.on("click", function (e) {
+				polypoints.push([e.latlng.lng, -e.latlng.lat]);
+				console.log(polypoints[polypoints.length - 1]);
+				polygon.setLatLngs(bxy(polypoints));
+			});
+			map.on("keypress", function (e) {
+				if (e.originalEvent.key == "r") {
+					console.log(polypoints.pop());
+					polygon.setLatLngs(bxy(polypoints));
+				}
+			});*/
+			/*map.on("click", function(e) {
+				console.log(e.latlng,e)
+			});*/
+		</script>
+	</div>
+</body>
+
+</html>
