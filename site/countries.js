@@ -31,17 +31,17 @@ var countries = [ // countries
     {
         name: "SFRJ/СФРJ/SFRY",
         colour: "#ff0000",
-        description: "idfk nick can write this i guess im lazy",
+        description: "Yugoslavia is a socialist nation to the east.",
         wiki: "Countries/Socialist Federal Republic of Yugoslavia.md",
         waypoints: [
             {
                 name: "Varaždin/Вараждин/Varazhdin",
-                description: "Not Varadzin",
+                description: "Industrial city. Not Varadzin",
                 location: [701,-377]
             },
             {
                 name: "Zagreb/Загреб",
-                description: "Capital city of SFRJ",
+                description: "Capital city of the SFRY",
                 wiki: "Cities/Zagreb",
                 location: [1314,-736]
             }
