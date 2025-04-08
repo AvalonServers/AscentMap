@@ -1,7 +1,8 @@
-import os
+import os, threading, time
 from PIL import Image
 
 zoomlevels = 4
+threads = os.process_cpu_count() or os.cpu_count() or 4
 
 maxx = 0
 minx = 0
@@ -22,19 +23,30 @@ for f in os.listdir(os.path.normpath(os.path.join(os.getcwd(),"../day"))):
     files.append(f)
 imagedim = (abs(maxx-minx+1)*512,abs(maxy-miny+1)*512)
 
-print(minx, miny, maxx, maxy, imagedim)
+# the multithreading is definitely not just for fun ;3
+threadpool = [None] * threads
+threadqueue = []
 
+def processgroup(zg,z,n):
+    img = Image.new("RGBA",(512,512))
+    for segpath, sx, sy in zg:
+        try:
+            segment = Image.open(segpath)
+        except Exception as e:
+            print(e)
+            continue
+        img.paste(segment.resize([512>>z]*2,Image.BICUBIC),(sx*(512>>z),sy*(512>>z)))
+        segment.close()
+    img.save(os.path.join(os.getcwd(),str(zoomlevels-(z+1)),n))
+    print("processed {0}/{1}".format(z,n))
+
+print(minx, miny, maxx, maxy, imagedim)
 for z in range(zoomlevels):
     if not os.path.exists(os.path.join(os.getcwd(),str(zoomlevels-(z+1)))):
         os.mkdir(os.path.join(os.getcwd(),str(zoomlevels-(z+1))))
     zoomgroups = {}
     for f in files:
         print(z,f)
-        try:
-            segment = Image.open(os.path.normpath(os.path.join(os.getcwd(),"../day",f)))
-        except Exception as e:
-            print(e)
-            continue
         x, y = f.split(".",1)[0].split(",",1)
         try:
             x = int(x)
@@ -46,10 +58,25 @@ for z in range(zoomlevels):
         sx = x%(1<<z)
         sy = y%(1<<z)
         if not (gx,gy) in zoomgroups:
-            zoomgroups[(gx,gy)] = Image.new("RGBA",(512,512))
-        zoomgroups[(gx,gy)].paste(segment.resize([512>>z]*2,Image.BICUBIC),(sx*(512>>z),sy*(512>>z)))
-        segment.close()
+            zoomgroups[(gx,gy)] = []
+        zoomgroups[(gx,gy)].append((os.path.normpath(os.path.join(os.getcwd(),"../day",f)),sx,sy))
 
     for zoomgroup in zoomgroups:
-        print("saving {0} {1},{2}.png".format(z,*zoomgroup))
-        zoomgroups[zoomgroup].save(os.path.join(os.getcwd(),str(zoomlevels-(z+1)),"{0},{1}.png".format(*zoomgroup)))
+        threadqueue.append(threading.Thread(target=processgroup,args=(zoomgroups[zoomgroup],z,"{0},{1}.png".format(*zoomgroup))))
+
+try:
+    while len(threadqueue):
+        for i,thread in enumerate(threadpool):
+            if thread == None or not thread.is_alive():
+                if len(threadqueue):
+                    thread = threadqueue.pop(0)
+                    thread.start()
+                    threadpool[i] = thread
+        time.sleep(0.1)
+
+except KeyboardInterrupt:
+    pass
+
+for thread in threadpool:
+    if thread != None and thread.is_alive():
+        thread.join()
